@@ -37,15 +37,15 @@ def client_manager(client_socket):
     
     clientConnected = True
     while clientConnected:
-        msg = client_socket.recv(BUFFSIZE)
+        msg = client_socket.recv(BUFFSIZE).decode("utf8")
 
-        if msg != bytes(QUIT_COMMAND, "utf8"):
-            send_message_toAll(msg, name +": ")
+        if msg != QUIT_COMMAND:
+            send_message_toAll(name, msg)
         else:
             client_socket.send(bytes(QUIT_COMMAND, "utf8"))
             client_socket.close()
             del users[client_socket]
-            send_message_toAll(bytes(name + " ha abbandonato la Chat.", "utf8"))
+            send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
             break
 
 def send_message_toAll(ori, msg):
@@ -53,7 +53,7 @@ def send_message_toAll(ori, msg):
         send_message(client, ori, msg)
 
 def send_message(dest, ori, msg):
-    dest.send(bytes(ori + ":" + msg, "utf8"))
+    dest.send(bytes(ori + ": " + msg, "utf8"))
 
 if __name__ == "__main__":
     start_server(ADDR)
