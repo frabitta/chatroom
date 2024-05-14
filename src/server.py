@@ -46,7 +46,7 @@ def client_manager(client_socket):
             client_socket.close()
             del users[client_socket]
             send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
-            break
+            clientConnected = False
 
 def send_message_toAll(ori, msg):
     for client in users:
