@@ -10,14 +10,23 @@ QUIT_COMMAND = ChatServer.QUIT_COMMAND
 ADDR = (HOST, PORT)
 
 client_name = ""
+listeners = []
 
 def receiver(client_socket):
     while True:
         try:
             msg = client_socket.recv(BUFFSIZE).decode("utf8")
             print(msg)
+            notifyIncomingMsg(msg)
         except OSError:
             break
+
+def notifyIncomingMsg(msg):
+    for listener in listeners:
+        listener.updateMessages(msg)
+
+def addListener(listener):
+    listeners.append(listener)
 
 def connect(addr, name = "USR"):
     client_name = name

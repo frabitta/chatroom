@@ -9,6 +9,10 @@ def send_message(event=None):
     if msg == ChatClient.QUIT_COMMAND:
         finestra.quit()
 
+class ChatClientListener:
+    def updateMessages(msg):
+        msg_list.insert(tkt.END, msg)
+
 def on_closing():
     msg_text.set(ChatClient.QUIT_COMMAND)
     send_message()
@@ -39,6 +43,7 @@ finestra.protocol("WM_DELETE_WINDOW", on_closing)
 
 #----Connessione al Server----
 client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
+ChatClient.addListener(ChatClientListener)
 
 # Avvia l'esecuzione della Finestra Chat.
 tkt.mainloop()

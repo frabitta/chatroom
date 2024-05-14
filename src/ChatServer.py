@@ -58,7 +58,7 @@ def client_manager(client_socket):
             send_message_toAll(name, msg)
         else:
             client_socket.close()
-            print(addresses[client_socket] + " si è disconnesso.")
+            print(addresses[client_socket], " si è disconnesso.")
             send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
             del users[client_socket]
             del addresses[client_socket]
