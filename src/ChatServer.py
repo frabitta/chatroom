@@ -14,62 +14,88 @@ ADDR = (HOST, PORT)
 users = {}
 addresses = {}
 
-# creazione del socket
+acceptThread = None
+server = None
+
 def start_server(addr):
+    global server
+    global acceptThread
     server = socket(AF_INET, SOCK_STREAM)
     server.bind(addr)
     server.listen(QUEUE)
     print("Server in ascolto sulla porta", addr[1])
-    Thread(target=accept_connections, args=(server,)).start()
+    acceptThread = Thread(target=accept_connections, args=(server,))
+    acceptThread.start()
 
+active = True
 def accept_connections(server):
-    active = True
     while active:
-        client_socket, client_address = server.accept()
+        try:
+            client_socket, client_address = server.accept()
+        except OSError:
+            continue
         addresses[client_socket] = client_address
         print("si è collegato ", client_address)
         Thread(target=client_manager, args=(client_socket,)).start()
-        if users.__len__ == 0:
-            active = False
+
+def closeServer():
+    global server
+    global acceptThread
+    global active
+    active = False
     server.close()
+    acceptThread.join()
     print("Server chiuso")
 
 def client_manager(client_socket):
-    send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare.")
-    
-    name = client_socket.recv(BUFFSIZE).decode("utf8")
-    if name == SERVER_NAME:
-        name = DEFAULT_USER_NAME
-    new_name = name
-    i = 1
-    while new_name in users.values():
-        new_name = name + "_" + str(i)
-        i += 1
-    name = new_name
+    # If we encounter an error, we close the connection with the client
+    try:
+        send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare.")
+        # Establishing the user's name
+        name = client_socket.recv(BUFFSIZE).decode("utf8")
+        if name == SERVER_NAME:
+            name = DEFAULT_USER_NAME
+        new_name = name
+        i = 1
+        while new_name in users.values():
+            new_name = name + "_" + str(i)
+            i += 1
+        name = new_name
+        # Sending the welcome message
+        send_message_toAll(SERVER_NAME, name + " è entrato nella chat")
+        users[client_socket] = name
+        # Managing the chat
+        clientConnected = True
+        while clientConnected:
+            msg = client_socket.recv(BUFFSIZE).decode("utf8")
+            if msg != QUIT_COMMAND:
+                send_message_toAll(name, msg)
+            else:
+                closeConnection(client_socket)
+    except OSError:
+        closeConnection(client_socket)
 
-    send_message_toAll(SERVER_NAME, name + " è entrato nella chat")
-    users[client_socket] = name
-    
-    clientConnected = True
-    while clientConnected:
-        msg = client_socket.recv(BUFFSIZE).decode("utf8")
-
-        if msg != QUIT_COMMAND:
-            send_message_toAll(name, msg)
-        else:
-            client_socket.close()
-            print(addresses[client_socket], " si è disconnesso.")
-            send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
-            del users[client_socket]
-            del addresses[client_socket]
-            clientConnected = False
+def closeConnection(client_socket):
+    name = users[client_socket]
+    client_socket.close()
+    print(addresses[client_socket], " si è disconnesso.")
+    del users[client_socket]
+    del addresses[client_socket]
+    send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
+    clientConnected = False
+    if len(users) == 0:
+        closeServer()
 
 def send_message_toAll(ori, msg):
     for client in users:
         send_message(client, ori, msg)
 
 def send_message(dest, ori, msg):
-    dest.send(bytes(ori + ": " + msg, "utf8"))
+    # If we encounter an error, we close the connection with the client
+    try:
+        dest.send(bytes(ori + ": " + msg, "utf8"))
+    except OSError:
+        closeConnection(dest)
 
 if __name__ == "__main__":
     start_server(ADDR)
