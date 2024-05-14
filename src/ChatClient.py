@@ -1,15 +1,15 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
+import ChatServer
 
 # definizione delle costanti della connesisone (indirizzo e buffer)
 HOST = 'localhost'
-PORT = 53000
-QUEUE = 5
-BUFFSIZE = 1024
-QUIT_COMMAND = "?{quit}"
+PORT = ChatServer.PORT
+BUFFSIZE = ChatServer.BUFFSIZE
+QUIT_COMMAND = ChatServer.QUIT_COMMAND
 ADDR = (HOST, PORT)
 
-client_name = "USR1"
+client_name = ""
 
 def receiver(client_socket):
     while True:

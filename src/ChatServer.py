@@ -12,6 +12,7 @@ QUIT_COMMAND = "?{quit}"
 ADDR = (HOST, PORT)
 
 users = {}
+addresses = {}
 
 # creazione del socket
 def start_server(addr):
@@ -25,6 +26,7 @@ def accept_connections(server):
     active = True
     while active:
         client_socket, client_address = server.accept()
+        addresses[client_socket] = client_address
         print("si è collegato ", client_address)
         Thread(target=client_manager, args=(client_socket,)).start()
         if users.__len__ == 0:
@@ -33,7 +35,7 @@ def accept_connections(server):
     print("Server chiuso")
 
 def client_manager(client_socket):
-    send_message(client_socket, SERVER_NAME, "Benvenuto! Digita il tuo nome")
+    send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare.")
     
     name = client_socket.recv(BUFFSIZE).decode("utf8")
     if name == SERVER_NAME:
@@ -56,9 +58,10 @@ def client_manager(client_socket):
             send_message_toAll(name, msg)
         else:
             client_socket.close()
-            del users[client_socket]
-            print(name + " ha abbandonato la Chat.")
+            print(addresses[client_socket] + " si è disconnesso.")
             send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
+            del users[client_socket]
+            del addresses[client_socket]
             clientConnected = False
 
 def send_message_toAll(ori, msg):

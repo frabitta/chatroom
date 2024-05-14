@@ -1,16 +1,16 @@
 import tkinter as tkt
-import server
-import client
+import ChatServer
+import ChatClient
 
 def send_message(event=None):
     msg = msg_text.get()
     msg_text.set("")
-    client.send_message(client_socket, msg)
-    if msg == client.QUIT_COMMAND:
+    ChatClient.send_message(client_socket, msg)
+    if msg == ChatClient.QUIT_COMMAND:
         finestra.quit()
 
 def on_closing():
-    msg_text.set(client.QUIT_COMMAND)
+    msg_text.set(ChatClient.QUIT_COMMAND)
     send_message()
 
 finestra = tkt.Tk()
@@ -38,7 +38,7 @@ send_button.pack()
 finestra.protocol("WM_DELETE_WINDOW", on_closing)
 
 #----Connessione al Server----
-client_socket = client.connect(client.ADDR, "SERVER")
+client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
 
 # Avvia l'esecuzione della Finestra Chat.
 tkt.mainloop()
