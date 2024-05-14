@@ -9,7 +9,7 @@ BUFFSIZE = 1024
 QUIT_COMMAND = "?{quit}"
 ADDR = (HOST, PORT)
 
-client_name = "USR1_LISTENER"
+client_name = "USR1"
 
 def receiver(client_socket):
     while True:
@@ -19,14 +19,20 @@ def receiver(client_socket):
         except OSError:
             break
 
-def connect(addr):
+def connect(addr, name = "USR"):
+    client_name = name
     client_socket = socket(AF_INET, SOCK_STREAM)
     client_socket.connect(ADDR)
     client_socket.send(bytes(client_name, "utf8"))
     Thread(target=receiver, args=(client_socket,)).start()
+    return client_socket
 
 def send_message(client_socket, msg):
-    client_socket.send(bytes(client_name + ": " + msg, "utf8"))
+    client_socket.send(bytes(msg, "utf8"))
+    if msg == QUIT_COMMAND:
+        client_socket.close()
+        print("Connessione chiusa")
+        exit()
 
 if __name__ == "__main__":
     connect(ADDR)
