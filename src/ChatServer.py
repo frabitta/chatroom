@@ -9,6 +9,7 @@ BUFFSIZE = 1024
 SERVER_NAME = "SERVER"
 DEFAULT_USER_NAME = "USR"
 QUIT_COMMAND = "?{quit}"
+TIMEOUT = 10.0
 ADDR = (HOST, PORT)
 
 users = {}
@@ -48,32 +49,41 @@ def closeServer():
     print("Server chiuso")
 
 def client_manager(client_socket):
-    # If we encounter an error, we close the connection with the client
+    send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare.")
+    # Establishing the user's name
+    # If the user doesn't send a name in the time limit, we assign a default one
+    client_socket.settimeout(TIMEOUT)
     try:
-        send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare.")
-        # Establishing the user's name
         name = client_socket.recv(BUFFSIZE).decode("utf8")
-        if name == SERVER_NAME:
-            name = DEFAULT_USER_NAME
-        new_name = name
-        i = 1
-        while new_name in users.values():
-            new_name = name + "_" + str(i)
-            i += 1
-        name = new_name
-        # Sending the welcome message
-        send_message_toAll(SERVER_NAME, name + " è entrato nella chat")
-        users[client_socket] = name
-        # Managing the chat
-        clientConnected = True
-        while clientConnected:
+    except TimeoutError:
+        name = DEFAULT_USER_NAME
+        return
+    if name == SERVER_NAME:
+        name = DEFAULT_USER_NAME
+    new_name = name
+    i = 1
+    while new_name in users.values():
+        new_name = name + "_" + str(i)
+        i += 1
+    name = new_name
+    # Sending the welcome message
+    send_message_toAll(SERVER_NAME, name + " è entrato nella chat")
+    users[client_socket] = name
+    # Managing the chat
+    while client_socket in users:
+        client_socket.settimeout(1.0)
+        try:
             msg = client_socket.recv(BUFFSIZE).decode("utf8")
             if msg != QUIT_COMMAND:
                 send_message_toAll(name, msg)
             else:
                 closeConnection(client_socket)
-    except OSError:
-        closeConnection(client_socket)
+        except TimeoutError:
+            continue
+        except OSError:
+            closeConnection(client_socket)
+            continue
+    
 
 def closeConnection(client_socket):
     name = users[client_socket]
@@ -82,7 +92,6 @@ def closeConnection(client_socket):
     del users[client_socket]
     del addresses[client_socket]
     send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
-    clientConnected = False
     if len(users) == 0:
         closeServer()
 

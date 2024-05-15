@@ -7,6 +7,7 @@ def send_message(event=None):
     msg_text.set("")
     ChatClient.send_message(client_socket, msg)
     if msg == ChatClient.QUIT_COMMAND:
+        receiver_Thred.join()
         finestra.quit()
 
 class ChatClientListener:
@@ -42,7 +43,7 @@ send_button.pack()
 
 finestra.protocol("WM_DELETE_WINDOW", on_closing)
 
-client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
+receiver_Thred, client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
 ChatClient.addListener(ChatClientListener)
 
 tkt.mainloop()
