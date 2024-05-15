@@ -47,15 +47,14 @@ def closeServer():
     global server_activeStatus
     if server_activeStatus:
         server_activeStatus = False
-        for client in users:
-            #closeConnection(client)
-            client.close()
-
-        # chiudo tutti i socket dei client connessi                     ------------------------------
-        # attendo la chiusura di tutti i thread di gestione dei client  ------------------------------
         # chiusura del socket del server e del thread di accettazione
         server_socket.close()
         acceptThread.join()
+        # chiudo tutte le connessioni coi client connessi
+        userList = users.copy().keys()
+        for client in userList:
+            closeConnection(client)
+        # attendo la chiusura di tutti i thread di gestione dei client  ------------------------------
         print("Server chiuso")
 
 def accept_connections():
@@ -124,15 +123,18 @@ def closeConnection(client_socket):
     """
     Chiude la connessione con il client e notifica la disconnessione a tutti gli altri utenti
     """
-    name = users[client_socket]
-    client_socket.close()
-    print(addresses[client_socket], " si è disconnesso.")
-    del users[client_socket]
-    del addresses[client_socket]
-    send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
-    # Se non ci sono più utenti connessi, chiudo il server
-    if len(users) == 0:
-        closeServer()
+    if client_socket in users.keys():
+        name = users[client_socket]
+        address = addresses[client_socket]
+        print("Tentativo di chiusura della connessione con ", address)
+        del users[client_socket]
+        del addresses[client_socket]
+        client_socket.close()
+        print(address, " si è disconnesso.")
+        send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
+        # Se non ci sono più utenti connessi, chiudo il server
+        if len(users) == 0:
+            closeServer()
 
 def send_message_toAll(ori, msg):
     """

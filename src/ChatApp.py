@@ -14,7 +14,6 @@ class ChatClientListener:
     def closedConnection():
         msg_list.insert(tkt.END, "Connessione chiusa")
         msg_list.insert(tkt.END, "Per chiudere la finestra, premi il tasto 'X'")
-        receiver_Thred.join()
         finestra.quit()
 
 def on_closing():
