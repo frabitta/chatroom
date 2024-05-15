@@ -16,6 +16,7 @@ ADDR = (HOST, PORT)
 # Dizionari dei client connessi: socket -> nome utente, socket -> indirizzo
 users = {}
 addresses = {}
+threads = {}
 # Definizione delle variabili globali: thread di accettaione delle connessioni, socket del server, stato del server
 acceptThread = None
 server_socket = None
@@ -53,8 +54,9 @@ def closeServer():
         # chiudo tutte le connessioni coi client connessi
         userList = users.copy().keys()
         for client in userList:
+            thread = threads[client]
             closeConnection(client)
-        # attendo la chiusura di tutti i thread di gestione dei client  ------------------------------
+            thread.join()
         print("Server chiuso")
 
 def accept_connections():
@@ -72,7 +74,9 @@ def accept_connections():
             addresses[client_socket] = client_address
             print("Si è collegato ", client_address)
             # Avvio il thread di gestione del client
-            Thread(target=client_manager, args=(client_socket,)).start()
+            client_thread = Thread(target=client_manager, args=(client_socket,))
+            threads[client_socket] = client_thread
+            client_thread.start()
         except OSError:
             continue
 
@@ -129,6 +133,7 @@ def closeConnection(client_socket):
         print("Tentativo di chiusura della connessione con ", address)
         del users[client_socket]
         del addresses[client_socket]
+        del threads[client_socket]
         client_socket.close()
         print(address, " si è disconnesso.")
         send_message_toAll(SERVER_NAME, name + " ha abbandonato la Chat.")
