@@ -1,5 +1,7 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
+import sys, signal
+import time
 
 # Definizione delle costanti della connessione
 HOST = ''
@@ -45,6 +47,10 @@ def closeServer():
     global server_activeStatus
     if server_activeStatus:
         server_activeStatus = False
+        for client in users:
+            #closeConnection(client)
+            client.close()
+
         # chiudo tutti i socket dei client connessi                     ------------------------------
         # attendo la chiusura di tutti i thread di gestione dei client  ------------------------------
         # chiusura del socket del server e del thread di accettazione
@@ -145,6 +151,18 @@ def send_message(dest, ori, msg):
     except OSError:
         closeConnection(dest)
 
+def signal_handler(signal, frame):
+    """
+    Termina l'esecuzione del server (usato dal comando Ctrl+C)
+    """
+    if server_activeStatus:
+        closeServer()
+    sys.exit(0)
+
 # Se lanciato come script, avvia il server
 if __name__ == "__main__":
     start_server(ADDR)
+    # avvia un loop per mantenere attivo il main thread in ascolto per il segnale di terminazione
+    signal.signal(signal.SIGINT, signal_handler)
+    while server_activeStatus:
+        time.sleep(1)

@@ -2,13 +2,14 @@ from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import ChatServer
 
+# Definizione delle costanti di connessione
 HOST = 'localhost'
-PORT = ChatServer.PORT
+PORT = ChatServer.PORT                      # da cambiare e non fare riferimento all'altro modulo???----------------
 BUFFSIZE = ChatServer.BUFFSIZE
 QUIT_COMMAND = ChatServer.QUIT_COMMAND
 ADDR = (HOST, PORT)
-
-listeners = []
+# Definizione delle variabili globali: applicazione in ascolto e status del client
+listener = None
 statusActive = False
 
 def receiver(client_socket):
@@ -24,30 +25,31 @@ def receiver(client_socket):
             break
 
 def notifyIncomingMsg(msg):
-    for listener in listeners:
-        listener.updateMessages(msg)
+    global listener
+    listener.updateMessages(msg)
 
 def notifyClosedConnection():
-    for listener in listeners:
-        listener.closedConnection()
+    global listener
+    listener.closedConnection()
 
-def addListener(listener):
-    listeners.append(listener)
+def addListener(new_listener):
+    global listener
+    listener = new_listener
 
 def connect(addr, name = "USR"):
     global statusActive
     client_name = name
     client_socket = socket(AF_INET, SOCK_STREAM)
+    thread = None
     try:
         client_socket.connect(ADDR)
         statusActive = True
+        send_message(client_socket, client_name)
+        thread = Thread(target=receiver, args=(client_socket,))
+        thread.start()
     except Exception as data:
         print("Errore di connessione")
-        print(data)
         closeConnection(client_socket)
-    send_message(client_socket, client_name)
-    thread = Thread(target=receiver, args=(client_socket,))
-    thread.start()
     return thread, client_socket
 
 def send_message(client_socket, msg):
@@ -62,8 +64,11 @@ def closeConnection(client_socket):
     global statusActive
     if statusActive:
         statusActive = False
-        client_socket.close()
-        print("Connessione chiusa")
+        try:
+            client_socket.close()
+            print("Connessione chiusa")
+        except OSError:                           # server????---------------------------------
+            print("Errore nella chiusura della connessione (client già chiuso?)")
         notifyClosedConnection()
 
 if __name__ == "__main__":

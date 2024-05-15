@@ -6,9 +6,6 @@ def send_message(event=None):
     msg = msg_text.get()
     msg_text.set("")
     ChatClient.send_message(client_socket, msg)
-    if msg == ChatClient.QUIT_COMMAND:
-        receiver_Thred.join()
-        finestra.quit()
 
 class ChatClientListener:
     def updateMessages(msg):
@@ -17,6 +14,8 @@ class ChatClientListener:
     def closedConnection():
         msg_list.insert(tkt.END, "Connessione chiusa")
         msg_list.insert(tkt.END, "Per chiudere la finestra, premi il tasto 'X'")
+        receiver_Thred.join()
+        finestra.quit()
 
 def on_closing():
     msg_text.set(ChatClient.QUIT_COMMAND)
@@ -46,4 +45,5 @@ finestra.protocol("WM_DELETE_WINDOW", on_closing)
 receiver_Thred, client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
 ChatClient.addListener(ChatClientListener)
 
-tkt.mainloop()
+if receiver_Thred is not None:
+    tkt.mainloop()
