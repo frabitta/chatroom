@@ -22,7 +22,7 @@ acceptThread = None
 server_socket = None
 server_activeStatus = False
 
-def start_server(addr):
+def start_server(addr = ADDR):
     """
     Avvia il server sulla porta (addr) specificata
     """
@@ -38,6 +38,7 @@ def start_server(addr):
     # avvio del thread per accettare le richieste di connessione
     acceptThread = Thread(target=accept_connections)
     acceptThread.start()
+    return addr
 
 def closeServer():
     """
@@ -55,6 +56,7 @@ def closeServer():
         userList = users.copy().keys()
         for client in userList:
             thread = threads[client]
+            client.send(bytes(QUIT_COMMAND, "utf8"))
             closeConnection(client)
             thread.join()
         print("Server chiuso")
@@ -86,7 +88,7 @@ def client_manager(client_socket):
         - riceve messaggi e li invia a tutti i client connessi
         - gestisce richiesta e casi di disconnessione
     """
-    send_message(client_socket, SERVER_NAME, "Benvenuto! Inizia a chattare inviando il tuo primo messaggio!")
+    send_message(client_socket, SERVER_NAME, "Benvenuto!")
     # Impostiamo l'username, se non riceviamo un nome entro il limite di tempo, assegnamo un nome di default
     client_socket.settimeout(TIMEOUT)
     try:

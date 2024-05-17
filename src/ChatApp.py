@@ -5,6 +5,11 @@ import ChatClient
 msg_text = None
 msg_list = None
 app = None
+receiver_Thred = None
+client_socket = None
+isConnected = False
+isHosting = False
+name = None
 
 def send_message(event=None):
     """
@@ -26,19 +31,57 @@ class ChatClientListener:
 
     def closedConnection():
         global app
+        global isConnected
         """
         Termina l'esecuzione dell'applicazione
         """
+        isConnected = False
         msg_list.insert(tkt.END, "Connessione chiusa")
         msg_list.insert(tkt.END, "Per chiudere la finestra, premi il tasto 'X'")
-        app.quit()
 
 def on_closing():
     """
     A chiusura dell'applicazione invia il comando di disconnessione
     """
-    msg_text.set(ChatClient.QUIT_COMMAND)
-    send_message()
+    global msg_text
+    global isConnected
+    global isHosting
+    global app
+
+    if isConnected:
+        isConnected = False
+        msg_text.set(ChatClient.QUIT_COMMAND)
+        send_message()
+    if isHosting:
+        isHosting = False
+        ChatServer.closeServer()
+    app.quit()
+
+def establish_connection(addr = ChatClient.ADDR):
+    global receiver_Thred
+    global client_socket
+    global isConnected
+    global name
+
+    host, port = addr
+    if host == "":
+        host = ChatClient.HOST
+    if port == "":
+        port = ChatClient.PORT
+    else:
+        port = int(port)
+    receiver_Thred, client_socket = ChatClient.connect((host, port), name.get())
+    ChatClient.addListener(ChatClientListener)
+    if client_socket is not None:
+        isConnected = True
+        app.show_frame(ChatRoom)
+
+def host_server():
+    global isHosting
+    isHosting = True
+    addr = ChatServer.start_server(ChatServer.ADDR)
+    msg_list.insert(tkt.END, "Server avviato all'indirizzo " + str(addr))
+    establish_connection()
 
 class ChatRoom(tkt.Frame):
     def __init__(self, parent, controller): 
@@ -62,15 +105,45 @@ class ChatRoom(tkt.Frame):
         send_button = tkt.Button(self, text="Invio", command=send_message)
         send_button.pack()
 
-class ChatRoom2(tkt.Frame):
+class Homepage(tkt.Frame):
     def __init__(self, parent, controller): 
-        global msg_text
-        global msg_list
-
+        global name
         tkt.Frame.__init__(self, parent)
-
-        label = tkt.Label(self, text ="Page 2")
+        # Titolo della pagina
+        label = tkt.Label(self, text ="Chatroom")
         label.pack()
+        # Crea i pulsanti per hostare o connettersi ad una chat
+        host_button = tkt.Button(self, text="Host chat", command = lambda : host_server())
+        host_button.pack()
+        connect_button = tkt.Button(self, text="Connect to chat", command = lambda : controller.show_frame(ConnectPage))
+        connect_button.pack()
+        # Crea il campo per inserire il proprio nome
+        label = tkt.Label(self, text ="Come ti chiami?")
+        label.pack()
+        name = tkt.StringVar()
+        name_entry = tkt.Entry(self, textvariable=name)
+        name_entry.pack()
+
+class ConnectPage(tkt.Frame):
+    def __init__(self, parent, controller): 
+        tkt.Frame.__init__(self, parent)
+        # Titolo della pagina
+        label = tkt.Label(self, text ="ConnectPage")
+        label.pack()
+        # Crea il campo per inserire l'indirizzo del server
+        label = tkt.Label(self, text ="Inserisci l'indirizzo del server:")
+        label.pack()
+        host_address = tkt.StringVar()
+        host_entry = tkt.Entry(self, textvariable=host_address)
+        host_entry.pack()
+        label = tkt.Label(self, text ="Inserisci la porta del server:")
+        label.pack()
+        port_address = tkt.StringVar()
+        port_entry = tkt.Entry(self, textvariable=port_address)
+        port_entry.pack()
+        # Crea il pulsante per connettersi al server
+        connect_button = tkt.Button(self, text="Connetti", command = lambda : establish_connection((host_address.get(), port_address.get())))
+        connect_button.pack()
 
 class tkinterApp(tkt.Tk):
     # __init__ function for class tkinterApp 
@@ -87,14 +160,14 @@ class tkinterApp(tkt.Tk):
         self.frames = {} 
         # iterating through a tuple consisting
         # of the different page layouts
-        for F in (ChatRoom, ChatRoom2):
+        for F in (ChatRoom, Homepage, ConnectPage):
             frame = F(container, self)
             # initializing frame of that object from
             # startpage, page1, page2 respectively with 
             # for loop
             self.frames[F] = frame 
             frame.grid(row=0, column=0, sticky="nsew")
-        self.show_frame(ChatRoom)
+        self.show_frame(Homepage)
 
 	# to display the current frame passed as
 	# parameter
@@ -104,7 +177,5 @@ class tkinterApp(tkt.Tk):
 
 # Crea la connessione al server
 app = tkinterApp()
-receiver_Thred, client_socket = ChatClient.connect(ChatClient.ADDR, "SERVER")
-ChatClient.addListener(ChatClientListener)
 app.protocol("WM_DELETE_WINDOW", on_closing)
 app.mainloop()

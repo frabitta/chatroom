@@ -8,16 +8,19 @@ PORT = ChatServer.PORT
 BUFFSIZE = ChatServer.BUFFSIZE
 QUIT_COMMAND = ChatServer.QUIT_COMMAND
 ADDR = (HOST, PORT)
+DEFAULT_USER_NAME = "USR"
 # Definizione delle variabili globali: applicazione in ascolto e status del client
 listener = None
 statusActive = False
 
-def connect(addr, name = "USR"):
+def connect(addr = ADDR, name = DEFAULT_USER_NAME):
     """
     Avvia la connessione al server sulla porta (addr) specificata
     """
     global statusActive
     # creazione del socket
+    if name == "":
+        name = DEFAULT_USER_NAME
     client_name = name
     client_socket = socket(AF_INET, SOCK_STREAM)
     thread = None
@@ -61,7 +64,10 @@ def receiver(client_socket):
     while statusActive:
         try:
             msg = client_socket.recv(BUFFSIZE).decode("utf8")
-            notifyIncomingMsg(msg)
+            if msg != QUIT_COMMAND:
+                notifyIncomingMsg(msg)
+            else:
+                closeConnection(client_socket)
         except TimeoutError:
             continue
         except OSError:
