@@ -46,12 +46,11 @@ def closeConnection(client_socket):
     # Terminiamo solo se risulta essere ancora attivo
     if statusActive:
         statusActive = False
-        # -------------------------------------------------------------------------------------
         try:
             client_socket.close()
             print("Connessione chiusa")
-        except OSError:                           # server????---------------------------------
-            print("Errore nella chiusura della connessione (client già chiuso?)")
+        except OSError:
+            print("Errore nella chiusura della connessione")
         notifyClosedConnection()
 
 def receiver(client_socket):
