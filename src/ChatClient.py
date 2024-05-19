@@ -65,7 +65,6 @@ def receiver(client_socket):
             msg = client_socket.recv(BUFFSIZE).decode("utf8")
             if msg != QUIT_COMMAND:
                 notifyIncomingMsg(msg)
-                print(msg)
             else:
                 closeConnection(client_socket)
         except TimeoutError:
