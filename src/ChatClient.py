@@ -113,5 +113,6 @@ def notifyClosedConnection():
         print("Connessione chiusa")
 
 # Se lanciato come script, avvia il client come solo "ascoltatore"
-# if __name__ == "__main__":
-#    connect(ADDR)
+# E' necessario commentare queste ultime righe di script se si desidera creare l'eseguibile
+if __name__ == "__main__":
+    connect(ADDR)
