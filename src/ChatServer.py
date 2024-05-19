@@ -170,9 +170,9 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 # Se lanciato come script, avvia il server
-if __name__ == "__main__":
-    start_server(ADDR)
+# if __name__ == "__main__":
+#    start_server(ADDR)
     # avvia un loop per mantenere attivo il main thread in ascolto per il segnale di terminazione
-    signal.signal(signal.SIGINT, signal_handler)
-    while server_activeStatus:
-        time.sleep(1)
+#    signal.signal(signal.SIGINT, signal_handler)
+#    while server_activeStatus:
+#        time.sleep(1)
