@@ -1,3 +1,4 @@
+import socket as s
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import sys, signal
@@ -38,7 +39,7 @@ def start_server(addr = ADDR):
     # avvio del thread per accettare le richieste di connessione
     acceptThread = Thread(target=accept_connections)
     acceptThread.start()
-    return addr
+    return s.gethostbyname(s.gethostname()), addr[1]
 
 def closeServer():
     """
