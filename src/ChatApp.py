@@ -5,8 +5,6 @@ import ChatClient
 msg_text = None
 msg_list = None
 app = None
-receiver_Thred = None
-client_socket = None
 isConnected = False
 isHosting = False
 name = None
@@ -17,7 +15,7 @@ def send_message(event=None):
     """
     msg = msg_text.get()
     msg_text.set("")
-    ChatClient.send_message(client_socket, msg)
+    ChatClient.send_message(msg)
 
 class ChatClientListener:
     """
@@ -58,8 +56,6 @@ def on_closing():
     app.quit()
 
 def establish_connection(addr = ChatClient.ADDR):
-    global receiver_Thred
-    global client_socket
     global isConnected
     global name
 
@@ -70,18 +66,18 @@ def establish_connection(addr = ChatClient.ADDR):
         port = ChatClient.PORT
     else:
         port = int(port)
-    receiver_Thred, client_socket = ChatClient.connect((host, port), name.get())
+    isConnected = ChatClient.connect((host, port), name.get())
     ChatClient.addListener(ChatClientListener)
-    if client_socket is not None:
-        isConnected = True
+    if isConnected:
         app.show_frame(ChatRoom)
 
 def host_server():
     global isHosting
     isHosting = True
     addr = ChatServer.start_server(ChatServer.ADDR)
-    msg_list.insert(tkt.END, "Server avviato all'indirizzo " + str(addr))
-    establish_connection()
+    if addr is not None:
+        msg_list.insert(tkt.END, "Server avviato all'indirizzo " + addr[0] + ":" + str(addr[1]))
+        establish_connection()
 
 class ChatRoom(tkt.Frame):
     def __init__(self, parent, controller): 

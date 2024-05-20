@@ -1,5 +1,6 @@
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
+import sys, signal, time
 import ChatServer
 
 # Definizione delle costanti di connessione
@@ -12,12 +13,14 @@ DEFAULT_USER_NAME = "USR"
 # Definizione delle variabili globali: applicazione in ascolto e status del client
 listener = None
 statusActive = False
+client_socket = None
 
 def connect(addr = ADDR, name = DEFAULT_USER_NAME):
     """
     Avvia la connessione al server sulla porta (addr) specificata
     """
     global statusActive
+    global client_socket
     # creazione del socket
     if name == "":
         name = DEFAULT_USER_NAME
@@ -29,34 +32,37 @@ def connect(addr = ADDR, name = DEFAULT_USER_NAME):
         client_socket.connect(addr)
         statusActive = True
         # invio del nome utente al server
-        send_message(client_socket, client_name)
+        send_message(client_name)
         # avvio del thread di ascolto dei messaggi
-        thread = Thread(target=receiver, args=(client_socket,))
+        thread = Thread(target=receiver, )
         thread.start()
+        return True
     except Exception as data:
         print("Errore di connessione")
-        closeConnection(client_socket)
-    return thread, client_socket
+        closeConnection()
+    return False
 
-def closeConnection(client_socket):
+def closeConnection():
     """
     Chiude la connessione con il server del socket client_socket
     """
     global statusActive
+    global client_socket
     # Terminiamo solo se risulta essere ancora attivo
     if statusActive:
         statusActive = False
         try:
             client_socket.close()
-            print("Connessione chiusa")
+            client_socket = None
         except OSError:
             print("Errore nella chiusura della connessione")
         notifyClosedConnection()
 
-def receiver(client_socket):
+def receiver():
     """
     Ascolta e riceve i messaggi dal server sul socket client_socket
     """
+    global client_socket
     # Usiamo il timeout per far si che non resti bloccato in attesa di ricevere messaggi
     # se il socket viene chiuso statusActive viene posto a False, terminando il ciclo e il thread
     client_socket.settimeout(1.0)
@@ -66,24 +72,26 @@ def receiver(client_socket):
             if msg != QUIT_COMMAND:
                 notifyIncomingMsg(msg)
             else:
-                closeConnection(client_socket)
+                closeConnection()
         except TimeoutError:
             continue
         except OSError:
-            closeConnection(client_socket)
+            closeConnection()
             break
 
-def send_message(client_socket, msg):
+def send_message(msg):
     """
     Invio di un messaggio (msg) al server tramite client_socket
     """
+    global client_socket
     # In caso di errore o di messaggio corrispondente al comando di uscita terminiamo la connessione
-    try:
-        client_socket.send(bytes(msg, "utf8"))
-    except OSError:
-        closeConnection(client_socket)
-    if msg == QUIT_COMMAND:
-        closeConnection(client_socket)
+    if statusActive:
+        try:
+            client_socket.send(bytes(msg, "utf8"))
+        except OSError:
+            closeConnection()
+        if msg == QUIT_COMMAND:
+            closeConnection()
 
 def addListener(new_listener):
     """
@@ -112,7 +120,19 @@ def notifyClosedConnection():
     else:
         print("Connessione chiusa")
 
+def signal_handler(signal, frame):
+    """
+    Termina l'esecuzione del client (usato dal comando Ctrl+C)
+    """
+    if statusActive:
+        closeConnection()
+    sys.exit(0)
+
 # Se lanciato come script, avvia il client come solo "ascoltatore"
 # E' necessario commentare queste ultime righe di script se si desidera creare l'eseguibile
 if __name__ == "__main__":
-    connect(ADDR)
+    connect(ADDR, "ServerListener")
+    # avvia un loop per mantenere attivo il main thread in ascolto per il segnale di terminazione
+    signal.signal(signal.SIGINT, signal_handler)
+    while statusActive:
+       time.sleep(1)

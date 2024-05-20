@@ -32,14 +32,18 @@ def start_server(addr = ADDR):
     global server_activeStatus
     # creazione del socket
     server_socket = socket(AF_INET, SOCK_STREAM)
-    server_socket.bind(addr)
-    server_socket.listen(QUEUE)
-    server_activeStatus = True
-    print("Server in ascolto sulla porta", addr[1])
-    # avvio del thread per accettare le richieste di connessione
-    acceptThread = Thread(target=accept_connections)
-    acceptThread.start()
-    return s.gethostbyname(s.gethostname()), addr[1]
+    try:
+        server_socket.bind(addr)
+        server_socket.listen(QUEUE)
+        server_activeStatus = True
+        print("Server in ascolto su", s.gethostbyname(s.gethostname())+":"+str(addr[1]))
+        # avvio del thread per accettare le richieste di connessione
+        acceptThread = Thread(target=accept_connections)
+        acceptThread.start()
+        return s.gethostbyname(s.gethostname()), addr[1]
+    except OSError:
+        print("Server già in esecuzione")
+        return None
 
 def closeServer():
     """
@@ -53,9 +57,9 @@ def closeServer():
         # chiusura del socket del server e del thread di accettazione
         server_socket.close()
         acceptThread.join()
+        server_socket = None
         # chiudo tutte le connessioni coi client connessi
-        userList = users.copy().keys()
-        for client in userList:
+        for client in users.copy().keys():
             thread = threads[client]
             client.send(bytes(QUIT_COMMAND, "utf8"))
             closeConnection(client)
@@ -109,7 +113,7 @@ def client_manager(client_socket):
     # Aggiungo il nome utente alla lista degli utenti
     users[client_socket] = name
     # Gestisco la chat finchè il client è connesso
-    while client_socket in users:
+    while client_socket in users and server_activeStatus:
         client_socket.settimeout(1.0)
         # Se incontro un errore nella connessione (client disconnesso), chiudo la connessione
         try:
@@ -148,18 +152,20 @@ def send_message_toAll(ori, msg):
     """
     Invia un messaggio a tutti gli utenti connessi
     """
-    for client in users:
-        send_message(client, ori, msg)
+    if server_activeStatus:
+        for client in users.copy().keys():
+            send_message(client, ori, msg)
 
 def send_message(dest, ori, msg):
     """
     Invia un messaggio al destinatario (dest: socket) con il mittente (ori: string) e messaggio (msg: string)
     """
-    try:
-        dest.send(bytes(ori + ": " + msg, "utf8"))
-    # Se il destinatario non è più connesso, chiudo la connessione
-    except OSError:
-        closeConnection(dest)
+    if server_activeStatus:
+        try:
+            dest.send(bytes(ori + ": " + msg, "utf8"))
+        # Se il destinatario non è più connesso, chiudo la connessione
+        except OSError:
+            closeConnection(dest)
 
 def signal_handler(signal, frame):
     """
