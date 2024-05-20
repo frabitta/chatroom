@@ -12,7 +12,7 @@ BUFFSIZE = 1024
 SERVER_NAME = "SERVER"
 DEFAULT_USER_NAME = "USR"
 QUIT_COMMAND = "?{quit}"
-TIMEOUT = 10.0
+TIMEOUT = 3.0
 ADDR = (HOST, PORT)
 # Dizionari dei client connessi: socket -> nome utente, socket -> indirizzo
 users = {}
